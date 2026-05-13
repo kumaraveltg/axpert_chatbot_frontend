@@ -1,0 +1,81 @@
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#f9fafb;
+  color:#111827;
+  height:100vh;
+  overflow:hidden;
+}
+
+.shell{display:flex;height:100vh;overflow:hidden}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:220px;flex-shrink:0;
+  background:#0f1e3c;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+.logo{
+  padding:16px;
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  display:flex;align-items:center;gap:10px;
+}
+.logo-icon{
+  width:30px;height:30px;border-radius:7px;
+  background:#2563eb;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:15px;flex-shrink:0;
+}
+.logo-name{font-size:14px;font-weight:500;color:#fff}
+.logo-sub{font-size:10px;color:rgba(255,255,255,0.35);margin-top:1px}
+
+.nav{flex:1;padding:10px 8px;overflow-y:auto}
+.nav-section{
+  font-size:10px;color:rgba(255,255,255,0.3);
+  letter-spacing:0.08em;text-transform:uppercase;
+  padding:10px 8px 4px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 9px;border-radius:7px;
+  cursor:pointer;color:rgba(255,255,255,0.5);
+  font-size:13px;margin-bottom:1px;
+  transition:all 0.15s;
+  user-select:none;
+}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.8)}
+.nav-item.active{background:rgba(37,99,235,0.3);color:#fff}
+.nav-item.active i{color:#60a5fa}
+.nav-item i{font-size:16px;width:18px;text-align:center}
+
+.schema-badge{
+  margin:8px;padding:8px 10px;
+  background:rgba(255,255,255,0.04);
+  border-radius:7px;border:1px solid rgba(255,255,255,0.07);
+}
+.schema-label{font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.06em}
+.schema-val{font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px;font-family:monospace}
+
+/* ── Main area ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+.topbar{
+  height:50px;padding:0 20px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  background:#fff;border-bottom:1px solid #e5e7eb;
+}
+.page-title{font-size:14px;font-weight:500;color:#111827}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#22c55e}
+.status-txt{font-size:12px;color:#6b7280}
+.avatar{
+  width:30px;height:30px;border-radius:50%;
+  background:#dbeafe;color:#1e40af;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:500;
+}
+
+.content{flex:1;display:flex;overflow:auto}
