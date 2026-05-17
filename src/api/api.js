@@ -1,14 +1,31 @@
 // ── Base URLs ─────────────────────────────────────────────────
-const CHAT_URL  = 'http://127.0.0.1:8006';
-const SYNC_URL  = 'http://127.0.0.1:8005';
-const ADMIN_URL = 'http://127.0.0.1:8007';
+const CHAT_URL  = import.meta.env.VITE_CHAT_URL  || 'http://127.0.0.1:8006';
+const SYNC_URL  = import.meta.env.VITE_SYNC_URL  || 'http://127.0.0.1:8005';
+const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || 'http://127.0.0.1:8007';
 
 // ── Base request helper ───────────────────────────────────────
+
 async function request(base, path, options = {}) {
+  const token = localStorage.getItem("axpert_token")
+  
   const res = await fetch(base + path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    },
     ...options
   });
+
+  // Handle session expired
+  if (res.status === 401) {
+    localStorage.removeItem("axpert_token")
+    localStorage.removeItem("axpert_role")
+    localStorage.removeItem("axpert_user")
+    localStorage.removeItem("axpert_schema")
+    window.location.reload()
+    return
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || 'Request failed');
@@ -50,7 +67,15 @@ export const chatApi = {
 
   collections: () => request(CHAT_URL, '/collections'),
   health:      () => request(CHAT_URL, '/health'),
+  
+  report: (question, schema, client_id,filters 
+  ) =>
+    request(CHAT_URL, '/report', {
+      method: 'POST',
+      body:   JSON.stringify({ question, schema, client_id: client_id, filters })
+    }),
 };
+
 
 
 // ══════════════════════════════════════════════════════════════
@@ -76,6 +101,7 @@ export const syncApi = {
     request(SYNC_URL, `/status/${schema}`),
 
   health:          () => request(SYNC_URL, '/health'),
+   
 
   // ── Shared knowledge ────────────────────────────────────────
   listShared:      () =>
@@ -138,6 +164,57 @@ export const adminApi = {
   checkPgTools: () =>
     request(ADMIN_URL, '/check-pg-tools'),
 
+  chromaListCollections: () =>
+  request(ADMIN_URL, '/chroma/collections'),
+
+  chromaGetChunks: (name, limit = 10, offset = 0) =>
+  request(ADMIN_URL, `/chroma/collections/${encodeURIComponent(name)}/chunks?limit=${limit}&offset=${offset}`),
+
+  chromaSearch: (name, q, limit = 10) =>
+  request(ADMIN_URL, `/chroma/collections/${encodeURIComponent(name)}/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+  // ── Industries ────────────────────────────────────────────
+  listIndustries:  () =>
+    request(ADMIN_URL, '/industries'),
+
+  createIndustry:  (payload) =>
+    request(ADMIN_URL, '/industries', {
+      method: 'POST',
+      body:   JSON.stringify(payload)
+    }),
+
+  deleteIndustry:  (id) =>
+    request(ADMIN_URL, `/industries/${id}`, { method: 'DELETE' }),
+
+  // ── Companies ─────────────────────────────────────────────
+  listCompanies:   () =>
+    request(ADMIN_URL, '/companies'),
+
+  createCompany:   (payload) =>
+    request(ADMIN_URL, '/companies', {
+      method: 'POST',
+      body:   JSON.stringify(payload)
+    }),
+
+  updateCompany:   (id, payload) =>
+    request(ADMIN_URL, `/companies/${id}`, {
+      method: 'PUT',
+      body:   JSON.stringify(payload)
+    }),
+
+  deleteCompany:   (id) =>
+    request(ADMIN_URL, `/companies/${id}`, { method: 'DELETE' }),
+
+  chromaListCollections: () =>
+    request(ADMIN_URL, '/chroma/collections'),
+
+  chromaGetChunks: (name, limit = 10, offset = 0) =>
+    request(ADMIN_URL, `/chroma/collections/${encodeURIComponent(name)}/chunks?limit=${limit}&offset=${offset}`),
+
+  chromaSearch: (name, q, limit = 10) =>
+    request(ADMIN_URL, `/chroma/collections/${encodeURIComponent(name)}/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+
+
+
   // ── Company ───────────────────────────────────────────────
   getCompany:       (schema) =>
     request(ADMIN_URL, `/company/${schema}`),
@@ -182,3 +259,4 @@ export const adminApi = {
   // ── Health ────────────────────────────────────────────────
   health:           () => request(ADMIN_URL, '/health'),
 };
+

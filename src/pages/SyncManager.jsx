@@ -230,7 +230,16 @@ export default function SyncManager() {
                     </div>
                     {statusBadge(conn.status)}
                     <span style={{ fontSize:11, color:'#9ca3af' }}>{conn.doc_count} docs</span>
-
+                    <button
+                      className="btn-xs btn-primary"
+                      onClick={() => migrateToCloud(conn)}
+                      disabled={migrating[conn.id]}
+                      title="Migrate to cloud"
+                      style={{ background:'#059669' }}
+                    >
+                    <i className={`ti ${migrating[conn.id] ? 'ti-loader' : 'ti-cloud-upload'}`}
+                      style={migrating[conn.id] ? { animation:'spin 1s linear infinite' } : {}} />
+                   </button>
                     <button
                       className="btn-xs"
                       onClick={() => testConnection(conn)}
@@ -240,33 +249,23 @@ export default function SyncManager() {
                       <i className={`ti ${testing[conn.id] ? 'ti-loader' : 'ti-plug'}`}
                          style={testing[conn.id] ? { animation:'spin 1s linear infinite' } : {}} />
                     </button>
-                       <button
-            className="btn-xs btn-primary"
-            onClick={() => migrateToCloud(conn)}
-            disabled={migrating[conn.id]}
-            title="Migrate to cloud"
-            style={{ background:'#059669' }}
-          >
-            <i className={`ti ${migrating[conn.id] ? 'ti-loader' : 'ti-cloud-upload'}`}
-              style={migrating[conn.id] ? { animation:'spin 1s linear infinite' } : {}} />
-          </button>
-                    <button
-                      className={`btn-xs btn-primary ${syncing[conn.id] ? 'loading' : ''}`}
-                      onClick={() => triggerSync(conn)}
-                      disabled={syncing[conn.id]}
-                      title="Sync now"
-                    >
-                      <i className={`ti ${syncing[conn.id] ? 'ti-loader' : 'ti-player-play'}`}
-                         style={syncing[conn.id] ? { animation:'spin 1s linear infinite' } : {}} />
-                    </button>
-
-                    <button
+                    
+                  <button
                       className="btn-xs"
                       onClick={() => registerModules(conn.schema_name)}
                       title="Register modules"
                     >
                       <i className="ti ti-list-check" />
                     </button>
+                  <button
+                    className={`btn-xs btn-primary ${syncing[conn.id] ? 'loading' : ''}`}
+                    onClick={() => triggerSync(conn)}
+                    disabled={syncing[conn.id]}
+                    title="Sync now"
+                  >
+                    <i className={`ti ${syncing[conn.id] ? 'ti-loader' : 'ti-player-play'}`}
+                        style={syncing[conn.id] ? { animation:'spin 1s linear infinite' } : {}} />
+                  </button>                    
 
                     <button
                       className="btn-xs"

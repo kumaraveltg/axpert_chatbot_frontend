@@ -6,14 +6,18 @@ import FieldInstructions from './pages/FieldInstructions';
 import BasicKnowledge    from './pages/BasicKnowledge';
 import LoginPage         from './pages/LoginPage';
 import './App.css';
+import SetupPage from './pages/SetupPage';
+import ChromaViewer from './pages/ChromaViewer';
 
 // ── Nav config ────────────────────────────────────────────────
 const NAV_ADMIN = [
   { id:'chat',   label:'Chat',                   icon:'ti-message-circle',   section:'User'  },
   { id:'dash',   label:'Dashboard',              icon:'ti-layout-dashboard', section:'Admin' },
-  { id:'sync',   label:'Sync Manager',           icon:'ti-refresh',          section:'Admin' },
-  { id:'fields', label:'Form/Field Instructions',icon:'ti-forms',            section:'Admin' },
-  { id:'basics', label:'Basic Knowledge',        icon:'ti-books',            section:'Admin' },
+  { id:'setup', label:'Setup', icon:'ti-settings', section:'Admin' },
+  { id:'sync',   label:'Sync Manager',           icon:'ti-refresh',          section:'Admin' },  
+  { id:'basics', label:'Basic Knowledge',        icon:'ti-books',            section:'Admin' }, 
+  { id:'fields', label:'Form/Field Instructions',icon:'ti-forms',            section:'Admin' }, 
+  { id: 'chroma', label: 'Vector Store', icon: 'ti-database', section: 'Admin' },
 ];
 
 const NAV_USER = [
@@ -25,11 +29,14 @@ const NAV_USER = [
 const TITLES = {
   chat:     'Chat',
   dash:     'Dashboard',
+  setup: 'Setup',
   sync:     'Sync Manager',
   fields:   'Form/Field Instructions',
   basics:   'Basic Knowledge',
   profile:  'Schema Info',
   password: 'Change Password',
+ 
+  chroma: 'Vector Store',
 };
 
 const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || "http://localhost:8007"
@@ -322,11 +329,13 @@ useEffect(() => {
         <div className="content">
           {page === 'chat'     && <ChatPage schema={schema} token={auth.token} onExpired={handleExpired} />}
           {page === 'dash'     && isAdmin && <Dashboard />}
+          {page === 'setup' && isAdmin && <SetupPage schema={schema} token={auth.token} />}
           {page === 'sync'     && isAdmin && <SyncManager />}
           {page === 'fields'   && isAdmin && <FieldInstructions schema={schema} />}
           {page === 'basics'   && isAdmin && <BasicKnowledge schema={schema} />}
           {page === 'profile'  && !isAdmin && <SchemaInfoPage username={auth.username} schema_name={schema} />}
-          {page === 'password' && <ChangePasswordPage token={auth.token} onExpired={handleExpired} />}
+          {page === 'password' && <ChangePasswordPage token={auth.token} onExpired={handleExpired} />}          
+          {page === 'chroma' && isAdmin && <ChromaViewer />}
         </div>
       </div>
     </div>
