@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect,useRef } from 'react';
 import './AdminPages.css';
 import { syncApi,adminApi } from '../api/api.js';
 
@@ -46,6 +46,13 @@ export default function BasicKnowledge({ schema = 'hcaspay' }) {
   const [coreTransactions, setCoreTransactions] = useState([]);
   const [selectedTransid,  setSelectedTransid]  = useState('');
   const [generating,       setGenerating]        = useState(false);
+  const [showUpload,   setShowUpload]   = useState(false);
+  const [uploadFile,   setUploadFile]   = useState(null);
+  const [uploadPrefix, setUploadPrefix] = useState('manual');
+  const [uploading,    setUploading]    = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
+  const [uploadError,  setUploadError]  = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => { fetchEntries(); }, []);
 
@@ -194,6 +201,57 @@ async function autoSyncDbEntry() {
   }
 }
 
+// ── File upload handlers ────────────────────────────────────
+  function openUpload() {
+    setUploadFile(null);
+    setUploadPrefix('manual');
+    setUploadResult(null);
+    setUploadError(null);
+    setShowUpload(true);
+  }
+
+  function onFileChange(e) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!['docx', 'txt', 'md', 'pdf'].includes(ext)) {
+      setUploadError('Only .docx, .txt, .md, .pdf files are supported.');
+      return;
+    }
+    setUploadError(null);
+    setUploadResult(null);
+    setUploadFile(f);
+  }
+
+  async function doUpload() {
+    if (!uploadFile) return;
+    setUploading(true);
+    setUploadError(null);
+    setUploadResult(null);
+    try {
+      const fd = new FormData();
+      fd.append('file',   uploadFile);
+      fd.append('prefix', uploadPrefix || 'manual');
+      fd.append('source', 'manual');
+      const SYNC_URL = import.meta.env.VITE_SYNC_URL || 'http://127.0.0.1:8005';
+      const res = await fetch(`${SYNC_URL}/shared/upload-knowledge`, {
+        method: 'POST',
+        body:   fd
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Upload failed: ${res.status}`);
+      }
+      const result = await res.json();
+      setUploadResult(result);
+      fetchEntries();
+    } catch (e) {
+      setUploadError(e.message || 'Upload failed.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <div className="admin-page">
       <div style={{ maxWidth: 860 }}>
@@ -224,6 +282,9 @@ async function autoSyncDbEntry() {
                 placeholder="Search..."
                 style={{ ...selectStyle, width: 140 }}
               />
+               <button className="btn-primary btn-sm" onClick={openUpload} style={{ background:'#6366f1' }}>
+                <i className="ti ti-upload" /> Upload File
+              </button>
               <button className="btn-primary btn-sm" onClick={openNew}>
                 <i className="ti ti-plus" /> Add Knowledge
               </button>
@@ -491,6 +552,112 @@ async function autoSyncDbEntry() {
                   : editEntry ? 'Update' : 'Save'
                 }
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── Upload File Modal ─────────────────────────────────── */}
+      {showUpload && (
+        <div style={modal.overlay}>
+          <div style={{ ...modal.box, width: 500 }}>
+            <div style={modal.title}>
+              <span><i className="ti ti-upload" style={{ marginRight:6 }} />Upload Knowledge File</span>
+              <button style={modal.close} onClick={() => !uploading && setShowUpload(false)}>✕</button>
+            </div>
+
+            <div style={{ fontSize:11, color:'#6b7280', background:'#f9fafb', borderRadius:6, padding:'8px 10px', marginBottom:12 }}>
+              <strong>.docx</strong> → splits by Heading 1/2 &nbsp;·&nbsp;
+              <strong>.txt/.md</strong> → splits by # headings &nbsp;·&nbsp;
+              <strong>.pdf</strong> → splits by paragraph
+            </div>
+
+            {uploadError && (
+              <div className="error-bar" style={{ marginBottom:10 }}>{uploadError}</div>
+            )}
+
+            {/* File picker */}
+            <div style={modal.field}>
+              <label style={modal.label}>Select File <span style={{ color:'#ef4444' }}>*</span></label>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  border:       '2px dashed #d1d5db',
+                  borderRadius: 8,
+                  padding:      '20px',
+                  textAlign:    'center',
+                  cursor:       'pointer',
+                  background:   uploadFile ? '#f0fdf4' : '#fafafa',
+                  color:        uploadFile ? '#166534' : '#9ca3af',
+                  fontSize:     13,
+                  transition:   'all 0.15s'
+                }}
+              >
+                {uploadFile
+                  ? <span><i className="ti ti-file-check" style={{ marginRight:6 }} />{uploadFile.name} ({(uploadFile.size/1024).toFixed(1)} KB)</span>
+                  : <span><i className="ti ti-file-upload" style={{ marginRight:6 }} />Click to choose file (.docx / .txt / .md / .pdf)</span>
+                }
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".docx,.txt,.md,.pdf"
+                style={{ display:'none' }}
+                onChange={onFileChange}
+              />
+            </div>
+
+            {/* Prefix */}
+            <div style={modal.field}>
+              <label style={modal.label}>Doc ID Prefix</label>
+              <input
+                style={modal.input}
+                placeholder="e.g. axpert, tally, hr"
+                value={uploadPrefix}
+                onChange={e => setUploadPrefix(e.target.value.toLowerCase().replace(/\s+/g,'_'))}
+              />
+              <div style={{ fontSize:10, color:'#9ca3af', marginTop:2 }}>
+                Chunks named: <code>{uploadPrefix || 'manual'}_01_heading_name</code>
+              </div>
+            </div>
+
+            {/* Result */}
+            {uploadResult && (
+              <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, padding:'10px 12px', marginBottom:10, fontSize:12 }}>
+                <div style={{ fontWeight:600, color:'#166534', marginBottom:6 }}>
+                  ✅ {uploadResult.saved} chunks saved &nbsp;·&nbsp; ~{uploadResult.total_tokens} tokens
+                </div>
+                <div style={{ maxHeight:160, overflowY:'auto' }}>
+                  {uploadResult.chunks?.map((c, i) => (
+                    <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'2px 0', borderBottom:'1px solid #dcfce7' }}>
+                      <span style={{ color:'#374151', fontFamily:'monospace', fontSize:11 }}>{c.doc_id}</span>
+                      <span style={{ color:'#6b7280', fontSize:11 }}>~{c.tokens} tokens</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:4 }}>
+              <button className="btn-xs" onClick={() => setShowUpload(false)} disabled={uploading}>
+                {uploadResult ? 'Close' : 'Cancel'}
+              </button>
+              {!uploadResult ? (
+                <button
+                  className="btn-xs btn-primary"
+                  onClick={doUpload}
+                  disabled={!uploadFile || uploading}
+                >
+                  {uploading
+                    ? <span><i className="ti ti-loader" style={{ animation:'spin 1s linear infinite', marginRight:4 }} />Processing...</span>
+                    : <span><i className="ti ti-upload" style={{ marginRight:4 }} />Upload & Chunk</span>
+                  }
+                </button>
+              ) : (
+                <button className="btn-xs btn-primary" onClick={() => { setUploadFile(null); setUploadResult(null); if(fileInputRef.current) fileInputRef.current.value=''; }}>
+                  Upload Another
+                </button>
+              )}
             </div>
           </div>
         </div>
